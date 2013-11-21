@@ -55,6 +55,8 @@ function [ p_value, h ] = smk_freq_KTST(cfg,TF1,TF2)
 %       - parallel: could be 0 or 1. if 1 the function is executing in 
 %         parallel manner on several cores. and then it is faster.   
 %         The default is 0;
+%       - channel: Used for selecting subset of channels. For options please see
+%        ft_channelselection function. The default is 'all'.
 % TH: please add one sentence, how this is implemented. we use quite a
 % variety of parallel environments here. so if you require a specific one
 % it should be mentioned here.
@@ -103,10 +105,16 @@ cfg.alpha = ft_getopt(cfg,'alpha',0.05);
 cfg.parallel = ft_getopt(cfg,'parallel',0);
 cfg.freqLim = ft_getopt(cfg,'freqLim','all');
 cfg.timeLim = ft_getopt(cfg,'timeLim','all');
+cfg.channel = ft_getopt(cfg,'channel','all');
 cfg.plot = ft_getopt(cfg, 'timeLim', 0);
+
 if cfg.plot == 1 & ~isfield(cfg,'layout')
     error('Please specify the layout for topographic map.');
 end
+
+selCha = ft_channelselection(cfg.channel,TF1.label);
+[TF1] = ft_selectdata_old(TF1,'channel',selCha);
+[TF2] = ft_selectdata_old(TF2,'channel',selCha);
 
 TF1.powspctrm(isnan(TF1.powspctrm)) = 0;
 TF2.powspctrm(isnan(TF2.powspctrm)) = 0;
@@ -133,7 +141,6 @@ else
     cfg.minTimeIdx = find(TF1.time == cfg.timeLim(1));
     cfg.maxTimeIdx = find(TF1.time == cfg.timeLim(2));
 end
-
 % TH: please do not add anything to the cfg structure. it is ok to
 % substitute missing fields by defaults but adding does not help. fieldtrip
 % "tracks" the cfg structure, i.e. it adds it to the processed data. so, it
@@ -189,7 +196,7 @@ for i = 1 : channelNum
 %     end
     p_value(i) = max(1/cfg.iterations, sum(mmd2u_null > mmd2u)/ cfg.iterations);
     if cfg.verbose
-        disp(strcat('Channel number:',num2str(i),'/',num2str(channelNum)));
+        disp(strcat('Channel number:',num2str(i),'/',num2str(channelNum),',p-value=',num2str(p_value(i))));
     end
 end
 % Correcting for MCP
